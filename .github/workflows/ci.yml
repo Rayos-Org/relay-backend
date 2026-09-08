@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: relay_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install pnpm
+      run: npm install -g pnpm@9.x
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Lint
+      run: pnpm run lint
+
+    - name: Typecheck
+      run: pnpm run build
+
+    - name: Unit Tests
+      run: pnpm run test
+
+    - name: E2E Tests
+      env:
+        DATABASE_URL: postgresql://postgres:password@localhost:5432/relay_dev
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        SOROBAN_RPC_URL: https://soroban-testnet.stellar.org
+        WEBAUTHN_RP_ID: localhost
+        WEBAUTHN_ORIGIN: http://localhost:3000
+      run: pnpm run test:e2e
