@@ -9,7 +9,7 @@ import { eq, and, isNull, gt } from "drizzle-orm";
 import { ConfigService } from "@nestjs/config";
 import { rpc, Contract, xdr } from "@stellar/stellar-sdk";
 import { DATABASE_CONNECTION } from "@common/database/database.module";
-import * as schema from "../../../drizzle/schema";
+import * as schema from "../../drizzle/schema";
 import { CreateSessionDto } from "@common/schemas/sessions.schema";
 import * as crypto from "crypto";
 

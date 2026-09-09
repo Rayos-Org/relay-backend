@@ -10,7 +10,7 @@ import { rpc } from "@stellar/stellar-sdk";
 import Redis from "ioredis";
 import { DATABASE_CONNECTION } from "@common/database/database.module";
 import { REDIS_CLIENT } from "@common/redis/redis.module";
-import * as schema from "../../../drizzle/schema";
+import * as schema from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
 @Injectable()

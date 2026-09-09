@@ -8,7 +8,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import { Queue } from "bullmq";
 import { InjectQueue } from "@nestjs/bullmq";
-import * as schema from "../../../drizzle/schema";
+import * as schema from "../../drizzle/schema";
 import { DATABASE_CONNECTION } from "@common/database/database.module";
 import {
   ProposeRecoveryDto,

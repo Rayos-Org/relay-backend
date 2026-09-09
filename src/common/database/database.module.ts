@@ -2,7 +2,7 @@ import { Module, Global } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
-import * as schema from "../../../drizzle/schema";
+import * as schema from "../../drizzle/schema";
 import * as ws from "ws";
 
 // Neon requires a WebSocket polyfill for Node.js

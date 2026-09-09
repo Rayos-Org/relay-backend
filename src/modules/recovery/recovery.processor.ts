@@ -3,7 +3,7 @@ import { Job } from "bullmq";
 import { Logger, Inject } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
-import * as schema from "../../../drizzle/schema";
+import * as schema from "../../drizzle/schema";
 import { DATABASE_CONNECTION } from "@common/database/database.module";
 import { ResendNotificationProvider } from "./notifications/resend.notification";
 import { RelayService } from "../relay/relay.service";
