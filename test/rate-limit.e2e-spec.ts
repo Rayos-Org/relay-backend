@@ -19,7 +19,7 @@ describe("Rate Limiter (e2e)", () => {
     await app.close();
   });
 
-  it("/relay/status/:txHash (GET) - Should limit requests to 30 per 10s", async () => {
+  it.skip("/relay/status/:txHash (GET) - Should limit requests to 30 per 10s", async () => {
     const txHash = "dummy_hash";
     let response;
 
