@@ -21,6 +21,9 @@ export const envSchema = z.object({
 
   // Relay
   LAUNCHTUBE_API_KEY: z.string().optional(),
+
+  // Notifications
+  RESEND_API_KEY: z.string().optional(),
 }).refine(data => data.REDIS_URL || (data.REDIS_HOST && data.REDIS_PORT), {
   message: "Either REDIS_URL or (REDIS_HOST and REDIS_PORT) must be provided",
   path: ["REDIS_URL"]

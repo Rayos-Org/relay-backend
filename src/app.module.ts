@@ -6,9 +6,10 @@ import { WebAuthnModule } from '@modules/webauthn/webauthn.module';
 import { RelayModule } from '@modules/relay/relay.module';
 import { SessionsModule } from '@modules/sessions/sessions.module';
 import { IndexerModule } from '@modules/indexer/indexer.module';
+import { RecoveryModule } from '@modules/recovery/recovery.module';
 
 @Module({
-  imports: [ConfigModule, DatabaseModule, RedisModule, WebAuthnModule, RelayModule, SessionsModule, IndexerModule],
+  imports: [ConfigModule, DatabaseModule, RedisModule, WebAuthnModule, RelayModule, SessionsModule, IndexerModule, RecoveryModule],
   controllers: [],
   providers: [],
 })
