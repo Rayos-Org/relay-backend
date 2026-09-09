@@ -1,44 +1,83 @@
 # Contributing to Rayos Relay Backend
 
-First off, thank you for considering contributing to Rayos! It's people like you that make open-source a great community.
+Thank you for your interest in contributing! The Rayos Relay is an open-source project and we welcome contributions of all kinds — bug fixes, new features, tests, documentation improvements, and more.
 
-## 1. Getting Started
+---
 
-1. **Fork the repository** on GitHub.
-2. **Clone your fork** locally:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/relay-backend.git
-   cd relay-backend
-   ```
-3. Follow the setup instructions in [docs/SETUP.md](./SETUP.md).
+## 📋 Before You Start
 
-## 2. Development Workflow
+- Read the [Trust Model](./TRUST.md) to understand the security constraints.
+- Check [open issues](https://github.com/Rayos-Org/relay-backend/issues) to see what's needed.
+- For large changes, open an issue first to discuss the approach.
 
-1. **Branching**: Create a new branch for your feature or bugfix.
-   ```bash
-   git checkout -b feature/my-new-feature
-   ```
-2. **Commiting**: We follow [Conventional Commits](https://www.conventionalcommits.org/).
-   - `feat:` for new features
-   - `fix:` for bug fixes
-   - `docs:` for documentation updates
-   - `chore:` for routine tasks
-3. **Linting & Formatting**: Ensure your code passes all linters.
-   ```bash
-   pnpm run lint
-   pnpm run format
-   ```
-4. **Testing**: Add unit or E2E tests for new features.
-   ```bash
-   pnpm run test:e2e
-   ```
+---
 
-## 3. Pull Requests
+## 🔧 Development Setup
 
-1. Push your branch to your fork.
-2. Open a Pull Request against the `main` branch of `Rayos-Org/relay-backend`.
-3. Provide a clear description of the problem and the solution.
-4. Wait for CI checks to pass and a maintainer to review your code.
+Follow the [SETUP.md](./SETUP.md) guide to get the project running locally.
 
-## 4. Code of Conduct
-Please note that this project is released with a Contributor Code of Conduct. By participating in this project you agree to abide by its terms.
+---
+
+## 📐 Code Style
+
+We use **ESLint** and **Prettier** to enforce consistent formatting.
+
+```bash
+pnpm lint    # Check and auto-fix lint errors
+pnpm format  # Run Prettier
+```
+
+- All files must pass lint with **zero errors** (warnings are OK).
+- Use **single quotes** for strings in TypeScript.
+- Keep functions small and single-purpose.
+
+---
+
+## 🌿 Branching & Commits
+
+**Branch naming:**
+
+| Type | Pattern | Example |
+|---|---|---|
+| Feature | `feat/<name>` | `feat/guardian-notifications` |
+| Bug fix | `fix/<name>` | `fix/redis-connection-leak` |
+| Documentation | `docs/<name>` | `docs/trust-model` |
+| Chore / CI | `chore/<name>` | `chore/update-dependencies` |
+
+**Commit messages** follow the [Conventional Commits](https://www.conventionalcommits.org/) standard:
+
+```
+feat: add guardian email notification on recovery proposal
+fix: handle expired redis challenge gracefully
+docs: improve TRUST.md with recovery flow details
+chore: upgrade @nestjs/common to v10.5
+test: add e2e coverage for /relay/submit
+```
+
+---
+
+## ✅ Pull Request Checklist
+
+Before submitting your PR, please ensure:
+
+- [ ] `pnpm run lint` passes with no errors
+- [ ] `pnpm exec tsc --noEmit` passes (no TypeScript errors)
+- [ ] `pnpm run test:e2e` passes
+- [ ] New features include corresponding tests or documentation updates
+- [ ] PR description clearly explains **what** changed and **why**
+
+---
+
+## 🚀 Submitting a Pull Request
+
+1. Fork the repository and create a branch from `main`.
+2. Make your changes following the guidelines above.
+3. Push to your fork and open a Pull Request to `Rayos-Org/relay-backend:main`.
+4. A maintainer will review your PR. Please be patient — we will respond within a few days.
+5. Once approved and CI passes, your PR will be merged.
+
+---
+
+## 💬 Getting Help
+
+If you have questions, open a [GitHub Discussion](https://github.com/Rayos-Org/relay-backend/discussions) or file an [issue](https://github.com/Rayos-Org/relay-backend/issues).

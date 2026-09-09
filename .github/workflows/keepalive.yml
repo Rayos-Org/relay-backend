@@ -13,4 +13,4 @@ jobs:
       - name: Ping Service
         # Replace the URL below with your actual Render URL
         run: |
-          curl -f https://relay-backend-xxxx.onrender.com/api/docs || echo "Failed but workflow continues"
+          curl -f https://rayos-relay-backend.onrender.com/api/docs -o /dev/null -s || echo "Ping failed but workflow continues"
