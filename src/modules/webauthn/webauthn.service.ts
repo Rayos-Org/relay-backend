@@ -1,19 +1,19 @@
-import { Injectable, Inject, BadRequestException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Inject, BadRequestException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
   generateAuthenticationOptions,
   verifyAuthenticationResponse,
-} from '@simplewebauthn/server';
-import Redis from 'ioredis';
-import { REDIS_CLIENT } from '@common/redis/redis.module';
+} from "@simplewebauthn/server";
+import Redis from "ioredis";
+import { REDIS_CLIENT } from "@common/redis/redis.module";
 import {
   WebAuthnRegisterOptionsDto,
   WebAuthnVerifyRegistrationDto,
   WebAuthnAssertOptionsDto,
   WebAuthnVerifyAssertionDto,
-} from '@common/schemas/webauthn.schema';
+} from "@common/schemas/webauthn.schema";
 
 @Injectable()
 export class WebAuthnService {
@@ -24,8 +24,8 @@ export class WebAuthnService {
     @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
     private configService: ConfigService,
   ) {
-    this.rpId = this.configService.get<string>('WEBAUTHN_RP_ID')!;
-    this.expectedOrigin = this.configService.get<string>('WEBAUTHN_ORIGIN')!;
+    this.rpId = this.configService.get<string>("WEBAUTHN_RP_ID")!;
+    this.expectedOrigin = this.configService.get<string>("WEBAUTHN_ORIGIN")!;
   }
 
   // --- Registration Flow ---
@@ -34,20 +34,20 @@ export class WebAuthnService {
     const challengeKey = `webauthn:challenge:reg:${dto.userHandle}`;
 
     const options = await generateRegistrationOptions({
-      rpName: 'Rayos Relay',
+      rpName: "Rayos Relay",
       rpID: this.rpId,
       userID: new Uint8Array(Buffer.from(dto.userHandle)),
       userName: dto.userName,
-      attestationType: 'none',
+      attestationType: "none",
       authenticatorSelection: {
-        residentKey: 'required',
-        userVerification: 'preferred',
+        residentKey: "required",
+        userVerification: "preferred",
       },
       supportedAlgorithmIDs: [-7, -257], // ES256, RS256
     });
 
     // Store challenge for 5 minutes
-    await this.redisClient.set(challengeKey, options.challenge, 'EX', 300);
+    await this.redisClient.set(challengeKey, options.challenge, "EX", 300);
 
     return options;
   }
@@ -57,7 +57,7 @@ export class WebAuthnService {
     const expectedChallenge = await this.redisClient.get(challengeKey);
 
     if (!expectedChallenge) {
-      throw new BadRequestException('Challenge expired or not found');
+      throw new BadRequestException("Challenge expired or not found");
     }
 
     let verification;
@@ -76,18 +76,19 @@ export class WebAuthnService {
       // Consume challenge to prevent replay
       await this.redisClient.del(challengeKey);
 
-      const { credentialID, credentialPublicKey, counter } = verification.registrationInfo;
+      const { credentialID, credentialPublicKey, counter } =
+        verification.registrationInfo;
 
       // In the real flow, wallet-sdk creates the transaction on-chain containing this key.
       // This endpoint confirms the user successfully completed a ceremony before submitting.
       return {
         verified: true,
-        credentialId: Buffer.from(credentialID).toString('base64url'),
-        publicKey: Buffer.from(credentialPublicKey).toString('base64url'),
+        credentialId: Buffer.from(credentialID).toString("base64url"),
+        publicKey: Buffer.from(credentialPublicKey).toString("base64url"),
       };
     }
 
-    throw new BadRequestException('Registration not verified');
+    throw new BadRequestException("Registration not verified");
   }
 
   // --- Assertion Flow ---
@@ -97,25 +98,28 @@ export class WebAuthnService {
 
     const options = await generateAuthenticationOptions({
       rpID: this.rpId,
-      userVerification: 'preferred',
+      userVerification: "preferred",
     });
 
     // Store challenge for 5 minutes
-    await this.redisClient.set(challengeKey, options.challenge, 'EX', 300);
+    await this.redisClient.set(challengeKey, options.challenge, "EX", 300);
 
     return options;
   }
 
-  async verifyAuthentication(dto: WebAuthnVerifyAssertionDto, storedPublicKeyBase64url: string) {
+  async verifyAuthentication(
+    dto: WebAuthnVerifyAssertionDto,
+    storedPublicKeyBase64url: string,
+  ) {
     const challengeKey = `webauthn:challenge:auth:${dto.userHandle}`;
     const expectedChallenge = await this.redisClient.get(challengeKey);
 
     if (!expectedChallenge) {
-      throw new BadRequestException('Challenge expired or not found');
+      throw new BadRequestException("Challenge expired or not found");
     }
 
     const authenticator = {
-      credentialPublicKey: Buffer.from(storedPublicKeyBase64url, 'base64url'),
+      credentialPublicKey: Buffer.from(storedPublicKeyBase64url, "base64url"),
       credentialID: dto.response.id,
       counter: 0, // We aren't strictly verifying counters off-chain as Soroban contract manages nonces
     } as any;
@@ -139,6 +143,6 @@ export class WebAuthnService {
       return { verified: true };
     }
 
-    throw new BadRequestException('Authentication not verified');
+    throw new BadRequestException("Authentication not verified");
   }
 }

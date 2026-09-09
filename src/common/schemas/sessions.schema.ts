@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const CreateSessionDtoSchema = z.object({
   walletAddress: z.string().length(56),

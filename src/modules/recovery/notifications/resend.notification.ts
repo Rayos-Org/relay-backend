@@ -1,7 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Resend } from 'resend';
-import { INotificationProvider, GuardianAlertData } from './notification.interface';
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { Resend } from "resend";
+import {
+  INotificationProvider,
+  GuardianAlertData,
+} from "./notification.interface";
 
 @Injectable()
 export class ResendNotificationProvider implements INotificationProvider {
@@ -9,11 +12,13 @@ export class ResendNotificationProvider implements INotificationProvider {
   private readonly logger = new Logger(ResendNotificationProvider.name);
 
   constructor(private configService: ConfigService) {
-    const apiKey = this.configService.get<string>('RESEND_API_KEY');
+    const apiKey = this.configService.get<string>("RESEND_API_KEY");
     if (apiKey) {
       this.resend = new Resend(apiKey);
     } else {
-      this.logger.warn('RESEND_API_KEY not configured. Falling back to console logging for notifications.');
+      this.logger.warn(
+        "RESEND_API_KEY not configured. Falling back to console logging for notifications.",
+      );
     }
   }
 
@@ -33,33 +38,37 @@ export class ResendNotificationProvider implements INotificationProvider {
         // In a real app, you'd map guardianAddress to an email via the indexer or user preferences.
         // For demonstration, we assume we have a way to resolve this or we send to a default address.
         const guardianEmail = this.resolveGuardianEmail(data.guardianAddress);
-        
+
         if (!guardianEmail) {
-           this.logger.warn(`Could not resolve email for guardian ${data.guardianAddress}`);
-           return;
+          this.logger.warn(
+            `Could not resolve email for guardian ${data.guardianAddress}`,
+          );
+          return;
         }
 
         await this.resend.emails.send({
-          from: 'Rayos Relay <noreply@relay.rayos.dev>',
+          from: "Rayos Relay <noreply@relay.rayos.dev>",
           to: guardianEmail,
           subject,
           html,
         });
-        
+
         this.logger.log(`Sent guardian alert email to ${guardianEmail}`);
       } catch (error: any) {
         this.logger.error(`Failed to send email via Resend: ${error.message}`);
       }
     } else {
       // Fallback if no API key
-      this.logger.log(`[SIMULATED EMAIL] To: Guardian ${data.guardianAddress} | Subject: ${subject}`);
+      this.logger.log(
+        `[SIMULATED EMAIL] To: Guardian ${data.guardianAddress} | Subject: ${subject}`,
+      );
     }
   }
 
   private resolveGuardianEmail(guardianAddress: string): string | null {
-    // Placeholder: In a real implementation, you'd query a user-profile table 
+    // Placeholder: In a real implementation, you'd query a user-profile table
     // to find the email associated with the guardian's wallet address.
     // For demo purposes:
-    return `guardian-${guardianAddress.substring(0,6)}@example.com`;
+    return `guardian-${guardianAddress.substring(0, 6)}@example.com`;
   }
 }
