@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: relay-backend
+    env: node
+    buildCommand: pnpm install && pnpm db:push && pnpm build
+    startCommand: node dist/main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false # Set securely in Render dashboard
+      - key: REDIS_URL
+        sync: false # Set securely in Render dashboard
+      - key: REDIS_HOST
+        value: localhost
+      - key: REDIS_PORT
+        value: 6379
+      - key: SOROBAN_RPC_URL
+        value: https://soroban-testnet.stellar.org
+      - key: WEBAUTHN_RP_ID
+        sync: false # Set in Render dashboard (e.g. relay.rayos.dev)
+      - key: WEBAUTHN_ORIGIN
+        sync: false # Set in Render dashboard (e.g. https://relay.rayos.dev)
+      - key: LAUNCHTUBE_API_KEY
+        sync: false # Set securely in Render dashboard
+      - key: RESEND_API_KEY
+        sync: false # Set securely in Render dashboard
