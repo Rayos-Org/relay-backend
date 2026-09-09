@@ -2,8 +2,8 @@ services:
   - type: web
     name: relay-backend
     env: node
-    buildCommand: pnpm install && pnpm db:push && pnpm build
-    startCommand: node dist/main
+    buildCommand: bash build.sh
+    startCommand: pnpm db:push && node dist/main
     envVars:
       - key: NODE_OPTIONS
         value: --max_old_space_size=400
