@@ -5,6 +5,8 @@ services:
     buildCommand: pnpm install && pnpm db:push && pnpm build
     startCommand: node dist/main
     envVars:
+      - key: NODE_OPTIONS
+        value: --max_old_space_size=400
       - key: NODE_ENV
         value: production
       - key: PORT
