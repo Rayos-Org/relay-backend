@@ -1,2 +1,0 @@
-minimumReleaseAgeExclude:
-  - '@rayos/wallet-sdk@0.1.1'
