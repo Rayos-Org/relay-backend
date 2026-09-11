@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { RequestMethod } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { ZodValidationPipe } from '@common/pipes/zod-validation.pipe';
 import { HttpExceptionFilter } from '@common/filters/http-exception.filter';
@@ -8,7 +9,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Global prefixes and filters
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', {
+    exclude: [{ path: '.well-known/(.*)', method: RequestMethod.GET }],
+  });
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // Swagger setup

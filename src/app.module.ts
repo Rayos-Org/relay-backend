@@ -7,6 +7,7 @@ import { RelayModule } from "@modules/relay/relay.module";
 import { SessionsModule } from "@modules/sessions/sessions.module";
 import { IndexerModule } from "@modules/indexer/indexer.module";
 import { RecoveryModule } from "@modules/recovery/recovery.module";
+import { WellKnownModule } from "@modules/well-known/well-known.module";
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { RecoveryModule } from "@modules/recovery/recovery.module";
     SessionsModule,
     IndexerModule,
     RecoveryModule,
+    WellKnownModule,
   ],
   controllers: [],
   providers: [],
