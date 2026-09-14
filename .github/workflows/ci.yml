@@ -36,9 +36,9 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Install pnpm
-      uses: pnpm/action-setup@v3
+      uses: pnpm/action-setup@v4
       with:
-        version: 9
+        version: 11
 
     - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
@@ -64,6 +64,7 @@ jobs:
         REDIS_HOST: localhost
         REDIS_PORT: 6379
         SOROBAN_RPC_URL: https://soroban-testnet.stellar.org
+        STELLAR_NETWORK_PASSPHRASE: "Test SDF Network ; September 2015"
         WEBAUTHN_RP_ID: localhost
         WEBAUTHN_ORIGIN: http://localhost:3000
       run: pnpm run test:e2e
