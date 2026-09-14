@@ -11,9 +11,17 @@ export const REDIS_CLIENT = "REDIS_CLIENT";
       provide: REDIS_CLIENT,
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const redisUrl = configService.get<string>("REDIS_URL");
+        let redisUrl = configService.get<string>("REDIS_URL");
         if (redisUrl) {
-          return new Redis(redisUrl);
+          // Upstash's TCP endpoint is TLS-only; a plain redis:// URL fails with
+          // "max retries per request" — silently upgrade it.
+          if (redisUrl.startsWith("redis://") && /upstash\.io/.test(redisUrl)) {
+            redisUrl = redisUrl.replace(/^redis:\/\//, "rediss://");
+          }
+          return new Redis(redisUrl, {
+            maxRetriesPerRequest: 3,
+            connectTimeout: 10_000,
+          });
         }
 
         const host = configService.get<string>("REDIS_HOST", "localhost");

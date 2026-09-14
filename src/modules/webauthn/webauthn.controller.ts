@@ -27,33 +27,30 @@ export class WebAuthnController {
   constructor(private readonly webauthnService: WebAuthnService) {}
 
   @Post("register/options")
-  @RateLimit({ windowMs: 60000, maxRequests: 5, keyStrategy: "ip" })
+  @RateLimit({ windowMs: 60000, maxRequests: 20, keyStrategy: "ip" })
   @UsePipes(new ZodValidationPipe(WebAuthnRegisterOptionsDtoSchema))
   async getRegistrationOptions(@Body() dto: WebAuthnRegisterOptionsDto) {
     return this.webauthnService.getRegistrationOptions(dto);
   }
 
   @Post("register/verify")
-  @RateLimit({ windowMs: 60000, maxRequests: 5, keyStrategy: "ip" })
+  @RateLimit({ windowMs: 60000, maxRequests: 20, keyStrategy: "ip" })
   @UsePipes(new ZodValidationPipe(WebAuthnVerifyRegistrationDtoSchema))
   async verifyRegistration(@Body() dto: WebAuthnVerifyRegistrationDto) {
     return this.webauthnService.verifyRegistration(dto);
   }
 
   @Post("assert/options")
-  @RateLimit({ windowMs: 60000, maxRequests: 5, keyStrategy: "ip" })
+  @RateLimit({ windowMs: 60000, maxRequests: 20, keyStrategy: "ip" })
   @UsePipes(new ZodValidationPipe(WebAuthnAssertOptionsDtoSchema))
   async getAuthenticationOptions(@Body() dto: WebAuthnAssertOptionsDto) {
     return this.webauthnService.getAuthenticationOptions(dto);
   }
 
   @Post("assert/verify")
-  @RateLimit({ windowMs: 60000, maxRequests: 5, keyStrategy: "ip" })
+  @RateLimit({ windowMs: 60000, maxRequests: 20, keyStrategy: "ip" })
   @UsePipes(new ZodValidationPipe(WebAuthnVerifyAssertionDtoSchema))
   async verifyAuthentication(@Body() dto: WebAuthnVerifyAssertionDto) {
-    // In actual implementation, we'll fetch the stored public key for this credential from the indexer or sessions module.
-    // Since verifyAuthentication logic depends on it, it might be moved to sessions/recovery service or we pass it here.
-    // For now, this is a placeholder response assuming we validate the key elsewhere.
-    return { status: "pending_key_verification" };
+    return this.webauthnService.verifyAuthentication(dto);
   }
 }

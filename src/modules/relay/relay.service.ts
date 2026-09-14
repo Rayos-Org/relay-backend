@@ -1,70 +1,91 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import {
-  rpc,
-  TransactionBuilder,
-  Networks,
-  Transaction,
-} from "@stellar/stellar-sdk";
+import { Injectable, BadRequestException, Logger } from "@nestjs/common";
+import { SponsorService } from "./sponsor.service";
 import { LaunchtubeStrategy } from "./strategies/launchtube.strategy";
+import { IndexerService } from "../indexer/indexer.service";
 import {
+  DeployWalletDto,
+  FaucetDto,
   SubmitTransactionDto,
   SubmitTransactionResponseDto,
 } from "@common/schemas/relay.schema";
 
+function base64urlToBytes(input: string): Uint8Array {
+  const b64 = input.replace(/-/g, "+").replace(/_/g, "/");
+  return new Uint8Array(
+    Buffer.from(b64 + "=".repeat((4 - (b64.length % 4)) % 4), "base64"),
+  );
+}
+
 @Injectable()
 export class RelayService {
-  private rpcServer: rpc.Server;
+  private readonly logger = new Logger(RelayService.name);
 
   constructor(
-    private configService: ConfigService,
-    private launchtubeStrategy: LaunchtubeStrategy,
-  ) {
-    const rpcUrl = this.configService.get<string>("SOROBAN_RPC_URL")!;
-    this.rpcServer = new rpc.Server(rpcUrl);
+    private readonly sponsor: SponsorService,
+    private readonly launchtube: LaunchtubeStrategy,
+    private readonly indexer: IndexerService,
+  ) {}
+
+  /** Public details clients need to build sponsored transactions. */
+  info() {
+    return {
+      publicKey: this.sponsor.publicKey,
+      networkPassphrase: this.sponsor.networkPassphrase,
+      factoryContractId: this.sponsor.factoryContractId,
+      nativeTokenContractId: this.sponsor.nativeTokenContractId,
+      faucetAmount: this.sponsor.isTestnet
+        ? String(this.sponsor.faucetAmountXlm)
+        : undefined,
+    };
   }
 
+  /**
+   * Deploy a GuardianWallet for a freshly registered passkey and record the
+   * credential → wallet mapping used by sign-in.
+   */
+  async deployWallet(dto: DeployWalletDto) {
+    const credentialIdBytes = base64urlToBytes(dto.credentialId);
+    const publicKey = new Uint8Array(Buffer.from(dto.publicKeyHex, "hex"));
+    const { walletAddress, txHash } = await this.sponsor.deployWallet(
+      dto.saltHex,
+      credentialIdBytes,
+      publicKey,
+    );
+    await this.indexer.indexCredential(dto.credentialId, walletAddress);
+    this.logger.log(
+      `Deployed wallet ${walletAddress} for credential ${dto.credentialId} (tx ${txHash})`,
+    );
+    return { walletAddress, txHash };
+  }
+
+  /**
+   * Submit a passkey-authorised transaction. If the relay has a sponsor
+   * account the transaction must use it as source and the relay signs the
+   * envelope; otherwise we fall back to Launchtube fee-bumping.
+   */
   async submitTransaction(
     dto: SubmitTransactionDto,
   ): Promise<SubmitTransactionResponseDto> {
-    try {
-      // 1. Validate XDR shape
-      // We parse the transaction to ensure it's a valid XDR and extract the source account (wallet address)
-      const tx = TransactionBuilder.fromXDR(
-        dto.signedXdr,
-        Networks.TESTNET,
-      ) as Transaction;
-      const walletAddress = tx.source;
-
-      if (!walletAddress) {
-        throw new Error("Transaction must have a source account");
+    if (this.sponsor.enabled) {
+      const result = await this.sponsor.signAndSubmit(dto.signedXdr);
+      if (result.status === "FAILED") {
+        throw new BadRequestException(
+          `Transaction ${result.txHash} failed on-chain`,
+        );
       }
-
-      // 2. We use Launchtube as our primary sponsorship strategy for now.
-      // The strategy pattern allows us to easily inject a FallbackStrategy here later.
-      const result = await this.launchtubeStrategy.sponsorAndSubmit(
-        dto.signedXdr,
-      );
-
-      return {
-        txHash: result.txHash,
-        status: result.status,
-      };
-    } catch (error: any) {
-      throw new BadRequestException(
-        `Failed to process transaction: ${error.message}`,
-      );
+      return { txHash: result.txHash, status: result.status.toLowerCase() };
     }
+    const result = await this.launchtube.sponsorAndSubmit(dto.signedXdr);
+    return { txHash: result.txHash, status: result.status };
+  }
+
+  async faucet(dto: FaucetDto) {
+    return this.sponsor.faucet(dto.walletAddress);
   }
 
   async getTransactionStatus(txHash: string) {
     try {
-      const response = await this.rpcServer.getTransaction(txHash);
-      return {
-        txHash,
-        status: response.status,
-        resultXdr: "resultXdr" in response ? response.resultXdr : null,
-      };
+      return await this.sponsor.status(txHash);
     } catch (error: any) {
       throw new BadRequestException(
         `Failed to fetch transaction status: ${error.message}`,

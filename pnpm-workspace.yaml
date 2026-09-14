@@ -1,0 +1,7 @@
+# pnpm 11 refuses to run postinstall scripts unless allow-listed; without this
+# `pnpm install --frozen-lockfile` exits 1 on Render and in CI.
+allowBuilds:
+  '@nestjs/core': true
+  esbuild: true
+  msgpackr-extract: true
+  unrs-resolver: true

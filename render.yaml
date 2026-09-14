@@ -3,7 +3,7 @@ services:
     name: relay-backend
     env: node
     buildCommand: bash build.sh
-    startCommand: pnpm db:push && node dist/src/main
+    startCommand: pnpm db:push && node dist/main
     envVars:
       - key: NODE_OPTIONS
         value: --max_old_space_size=400
@@ -21,11 +21,23 @@ services:
         value: 6379
       - key: SOROBAN_RPC_URL
         value: https://soroban-testnet.stellar.org
+      - key: STELLAR_NETWORK_PASSPHRASE
+        value: Test SDF Network ; September 2015
+      - key: FACTORY_CONTRACT_ID
+        value: CCCAMWJOF7IYTVCU7SR6HFTNH5XRMDMWPYN464NY5BCKUPMUM64RZ5CH
+      - key: NATIVE_TOKEN_CONTRACT_ID
+        value: CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+      - key: RELAY_SECRET_KEY
+        sync: false # Sponsor account secret (S...). Set securely in Render dashboard
+      - key: RELAY_FAUCET_XLM
+        value: 100
       - key: WEBAUTHN_RP_ID
-        sync: false # Set in Render dashboard (e.g. relay.rayos.dev)
+        sync: false # Domain of the WEB APP (e.g. app.rayos.dev), not the relay
       - key: WEBAUTHN_ORIGIN
-        sync: false # Set in Render dashboard (e.g. https://relay.rayos.dev)
+        sync: false # Full web-app origin(s), comma-separated (e.g. https://app.rayos.dev)
+      - key: CORS_ORIGINS
+        sync: false # Browser origins allowed to call the API (e.g. https://app.rayos.dev)
       - key: LAUNCHTUBE_API_KEY
-        sync: false # Set securely in Render dashboard
+        sync: false # Optional fallback when RELAY_SECRET_KEY is unset
       - key: RESEND_API_KEY
         sync: false # Set securely in Render dashboard

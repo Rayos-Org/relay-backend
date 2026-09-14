@@ -25,17 +25,17 @@ describe("Rate Limiter (e2e)", () => {
 
     // Simulate 30 requests (limit)
     for (let i = 0; i < 30; i++) {
-      response = await request(app.getHttpServer()).get(
-        `/relay/status/${txHash}`,
-      ).set('X-Forwarded-For', '192.168.1.100');
+      response = await request(app.getHttpServer())
+        .get(`/relay/status/${txHash}`)
+        .set("X-Forwarded-For", "192.168.1.100");
       // Usually would be 200/400 depending on actual DB/RPC, but rate limit shouldn't be 429 yet.
       expect(response.status).not.toBe(429);
     }
 
     // The 31st request should be rate-limited
-    response = await request(app.getHttpServer()).get(
-      `/relay/status/${txHash}`,
-    ).set('X-Forwarded-For', '192.168.1.100');
+    response = await request(app.getHttpServer())
+      .get(`/relay/status/${txHash}`)
+      .set("X-Forwarded-For", "192.168.1.100");
     expect(response.status).toBe(429);
   }, 15000);
 });

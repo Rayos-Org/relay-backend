@@ -23,7 +23,7 @@ describe("WebAuthn TTL (e2e)", () => {
     // 1. Generate challenge
     const resOptions = await request(app.getHttpServer())
       .post("/webauthn/register/options")
-      .send({ userHandle: 'testuser', userName: 'Test User' })
+      .send({ userHandle: "testuser", userName: "Test User" })
       .expect(201); // Created
 
     expect(resOptions.body.challenge).toBeDefined();
