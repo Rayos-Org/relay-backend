@@ -81,10 +81,10 @@ It sits between the client application and the Soroban network, abstracting away
 | Feature | Description |
 |---|---|
 | 🔑 **Passkey (WebAuthn) Orchestration** | Registers and verifies passkey ceremonies (Face ID, Touch ID, YubiKey) via WebAuthn/FIDO2, caching challenges in Redis with a strict TTL |
-| ⛽ **Gasless Transactions** | Wraps user-signed XDR in a fee-bump transaction via Launchtube, making all wallet interactions gas-free for the end user |
+| ⛽ **Gasless Transactions** | A relay-owned sponsor account is the source of every transaction: the passkey signs the wallet's Soroban auth entry, the relay re-simulates, signs the envelope and pays the fee. Also deploys wallets from the factory and runs the testnet faucet |
 | 🔒 **Session Key Management** | Creates and revokes temporary session scopes for seamless dapp logins, with fast off-chain lookups backed by Postgres |
 | 🛡 **Social Recovery** | BullMQ-powered orchestration that notifies guardians via email (Resend), aggregates approvals, enforces timelocks, and executes on-chain recovery atomically |
-| 📡 **Soroban Event Indexer** | Autonomous polling loop that syncs `credential_lookup` states from the Soroban RPC to the local database every 5 seconds |
+| 📡 **Wallet Index** | Maps passkey credential IDs to deployed wallet contract addresses (written on deploy, read on sign-in) |
 | 🚦 **Rate Limiting** | Redis-backed per-IP and per-wallet rate limiting on all endpoints to protect against abuse and DDoS |
 | 📄 **Swagger UI** | Auto-generated interactive API documentation available at `/api/docs` |
 
@@ -120,9 +120,10 @@ It sits between the client application and the Soroban network, abstracting away
 └──────────────────────────────┬──────────────────────────┘
                                │
               ┌────────────────▼────────────────┐
-              │      Launchtube Fee Sponsor      │
+              │  Sponsor account (RELAY_SECRET)  │
+              │  signs envelope · pays the fee   │
               └────────────────┬────────────────┘
-                               │ Fee-bump XDR
+                               │ Soroban RPC
               ┌────────────────▼────────────────┐
               │         Stellar Network          │
               │     (Testnet / Mainnet)          │
@@ -142,8 +143,12 @@ It sits between the client application and the Soroban network, abstracting away
 | `POST` | `/api/webauthn/register/verify` | Verify passkey registration |
 | `POST` | `/api/webauthn/assert/options` | Generate authentication challenge |
 | `POST` | `/api/webauthn/assert/verify` | Verify passkey authentication |
-| `POST` | `/api/relay/submit` | Submit a signed XDR for gasless fee-bump |
+| `GET`  | `/api/relay/info` | Sponsor address, factory/native contract IDs, faucet amount |
+| `POST` | `/api/relay/deploy` | Deploy a passkey wallet from the factory (sponsor pays) |
+| `POST` | `/api/relay/submit` | Submit a passkey-signed Soroban tx; sponsor signs the envelope and pays the fee |
+| `POST` | `/api/relay/faucet` | Testnet only: send `RELAY_FAUCET_XLM` to a wallet |
 | `GET`  | `/api/relay/status/:txHash` | Poll transaction status on Soroban RPC |
+| `GET`  | `/api/wallets/:credentialId` | Look up the wallet address for a passkey credential |
 | `POST` | `/api/sessions` | Create a session key |
 | `DELETE`| `/api/sessions/:sessionId` | Revoke a session |
 | `GET`  | `/api/sessions` | List active sessions for a wallet |
@@ -225,16 +230,30 @@ Copy `.env.example` to `.env` and fill in the values.
 | Variable | Required | Description |
 |---|---|---|
 | `DATABASE_URL` | ✅ | Neon Postgres connection URL |
-| `REDIS_URL` | ✅ | Upstash Redis URL (`rediss://...`) |
+| `REDIS_URL` | ✅ | Redis URL. **Upstash needs `rediss://`** (TLS); a `redis://` Upstash URL is auto-upgraded |
 | `SOROBAN_RPC_URL` | ✅ | Soroban RPC endpoint |
-| `WEBAUTHN_RP_ID` | ✅ | WebAuthn Relying Party ID (your domain) |
-| `WEBAUTHN_ORIGIN` | ✅ | Full origin URL of the client app |
+| `STELLAR_NETWORK_PASSPHRASE` | ✅ | Defaults to testnet |
+| `FACTORY_CONTRACT_ID` | ✅ | Wallet factory from `wallet-contracts` (testnet: `CCCAMWJOF7IYTVCU7SR6HFTNH5XRMDMWPYN464NY5BCKUPMUM64RZ5CH`) |
+| `NATIVE_TOKEN_CONTRACT_ID` | ⚠️ Optional | Native XLM SAC; defaults to the testnet address |
+| `RELAY_SECRET_KEY` | ✅ | Sponsor account secret (`S...`). Pays fees, deploys wallets, funds the faucet. Auto-funded from Friendbot on testnet |
+| `RELAY_FAUCET_XLM` | ⚠️ Optional | Faucet amount per request (default `100`) |
+| `RELAY_MIN_BALANCE_XLM` | ⚠️ Optional | Sponsor balance below which Friendbot top-up is attempted (default `500`) |
+| `WEBAUTHN_RP_ID` | ✅ | Registrable domain of the **web app** (e.g. `localhost`, `app.rayos.dev`) |
+| `WEBAUTHN_ORIGIN` | ✅ | Full origin(s) of the web app, comma-separated |
+| `CORS_ORIGINS` | ✅ | Browser origins allowed to call the API, comma-separated (`WEBAUTHN_ORIGIN` is always allowed) |
 | `RESEND_API_KEY` | ⚠️ Optional | Resend API key for guardian email alerts |
-| `LAUNCHTUBE_API_KEY` | ⚠️ Optional | Launchtube key for fee-bump sponsorship |
+| `LAUNCHTUBE_API_KEY` | ⚠️ Optional | Launchtube fallback for `/relay/submit` when `RELAY_SECRET_KEY` is unset |
 | `NODE_ENV` | ✅ | `development` or `production` |
 | `PORT` | ✅ | HTTP port (default: `3000`) |
 
-> **Note:** If `RESEND_API_KEY` is not set, the backend gracefully falls back to logging email content to the console. If `LAUNCHTUBE_API_KEY` is not set, the `/api/relay/submit` endpoint will return an error, but all other endpoints remain fully functional.
+> **Note:** If `RESEND_API_KEY` is not set, guardian emails are logged to the console. Without `RELAY_SECRET_KEY`, `/relay/deploy` and `/relay/faucet` are unavailable and `/relay/submit` falls back to Launchtube.
+
+Generate the sponsor key with the Stellar CLI (never commit it):
+
+```bash
+stellar keys generate relay-sponsor --network testnet --fund
+stellar keys show relay-sponsor   # -> RELAY_SECRET_KEY
+```
 
 ---
 
@@ -251,8 +270,12 @@ This repo contains a `render.yaml` Blueprint. To deploy your own instance:
 1. Fork this repository.
 2. Go to [Render Dashboard](https://dashboard.render.com/) → **New +** → **Blueprint**.
 3. Connect the forked repo. Render auto-reads `render.yaml`.
-4. Fill in the required environment variables.
-5. Click **Apply**.
+4. Fill in the required environment variables. In particular:
+   - `REDIS_URL` — the **`rediss://`** URL from Upstash
+   - `RELAY_SECRET_KEY` — the sponsor account secret (see above)
+   - `WEBAUTHN_RP_ID` / `WEBAUTHN_ORIGIN` — the **web dashboard's** domain and origin (passkeys are bound to the site the user sees, not the relay)
+   - `CORS_ORIGINS` — the web dashboard origin
+5. Click **Apply**. The start command runs `pnpm db:push`, which creates the `passkeys` table on first deploy.
 
 > 💡 A GitHub Actions workflow (`.github/workflows/keepalive.yml`) automatically pings the service every 10 minutes to prevent the free-tier service from sleeping.
 

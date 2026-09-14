@@ -14,12 +14,13 @@
 
 ## 2. Gasless Transactions Cannot Be Tampered With
 
-When a user submits a transaction:
-1. The user signs the **Soroban XDR** on their device locally using their passkey.
-2. The signed XDR is sent to the relay.
-3. The relay wraps it in a **fee-bump transaction** (adds its own sponsoring key for the gas fee only) and submits it to the network.
+When a user sends funds:
+1. The SDK simulates the `transfer` and obtains the wallet contract's **Soroban authorization entry** — a hash that commits to the exact call (`from`, `to`, `amount`, contract, network, expiry ledger).
+2. The passkey signs that hash on the device (WebAuthn `authenticatorData ‖ SHA-256(clientDataJSON)`, with the auth-entry hash as the challenge).
+3. The signed transaction is sent to the relay. The relay's **sponsor account is the transaction source**: it re-simulates, signs only the outer envelope, and pays the fee.
+4. On-chain, the wallet contract's `__check_auth` verifies the WebAuthn signature with `secp256r1_verify` against the passkey's registered public key.
 
-**The relay cannot change the inner transaction payload.** Doing so would invalidate the user's cryptographic signature, and the Soroban network would reject it outright. The relay can only pay for gas — it cannot move funds or execute arbitrary logic on behalf of the user.
+**The relay cannot change what the passkey authorised.** The wallet's authorization entry is bound to the exact invocation; altering the recipient, amount or contract changes the hash and the contract rejects it. The relay can only pay for gas — it cannot move funds or execute arbitrary logic on behalf of the user.
 
 ## 3. Social Recovery Is Guardian-Gated
 
