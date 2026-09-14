@@ -5,3 +5,8 @@ allowBuilds:
   esbuild: true
   msgpackr-extract: true
   unrs-resolver: true
+
+# Force uint8array-extras to 1.4.0 — v1.5.0 dropped CJS support and breaks
+# @stellar/stellar-sdk's CJS build with ERR_REQUIRE_ESM on Node.js 20/22.
+overrides:
+  uint8array-extras: '1.4.0'
