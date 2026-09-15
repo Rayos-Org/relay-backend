@@ -3,6 +3,7 @@ import { z } from "zod";
 export const WebAuthnRegisterOptionsDtoSchema = z.object({
   userHandle: z.string().min(1),
   userName: z.string().min(1),
+  rpId: z.string().optional(),
 });
 
 export type WebAuthnRegisterOptionsDto = z.infer<
@@ -21,6 +22,7 @@ export type WebAuthnVerifyRegistrationDto = z.infer<
 
 export const WebAuthnAssertOptionsDtoSchema = z.object({
   userHandle: z.string().min(1),
+  rpId: z.string().optional(),
 });
 
 export type WebAuthnAssertOptionsDto = z.infer<

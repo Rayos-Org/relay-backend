@@ -40,7 +40,7 @@ const CHALLENGE_TTL_SECONDS = 300;
  */
 @Injectable()
 export class WebAuthnService {
-  private readonly rpId: string;
+  private readonly rpIds: string[];
   private readonly expectedOrigins: string[];
 
   constructor(
@@ -49,7 +49,11 @@ export class WebAuthnService {
     private readonly db: NodePgDatabase<typeof schema>,
     private configService: ConfigService,
   ) {
-    this.rpId = this.configService.get<string>("WEBAUTHN_RP_ID")!;
+    this.rpIds = (this.configService.get<string>("WEBAUTHN_RP_ID") || "localhost")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+    
     // Comma-separated so the same relay can serve local dev + the deployed web app.
     this.expectedOrigins = (
       this.configService.get<string>("WEBAUTHN_ORIGIN") || ""
@@ -66,7 +70,7 @@ export class WebAuthnService {
 
     const options = await generateRegistrationOptions({
       rpName: "Guardian Wallet",
-      rpID: this.rpId,
+      rpID: dto.rpId || this.rpIds[0],
       userID: new Uint8Array(Buffer.from(dto.userHandle)),
       userName: dto.userName,
       attestationType: "none",
@@ -102,7 +106,7 @@ export class WebAuthnService {
         response: dto.response,
         expectedChallenge,
         expectedOrigin: this.expectedOrigins,
-        expectedRPID: this.rpId,
+        expectedRPID: this.rpIds,
         requireUserVerification: true,
       });
     } catch (error: any) {
@@ -144,7 +148,7 @@ export class WebAuthnService {
   async getAuthenticationOptions(dto: WebAuthnAssertOptionsDto) {
     const challengeKey = `webauthn:challenge:auth:${dto.userHandle}`;
     const options = await generateAuthenticationOptions({
-      rpID: this.rpId,
+      rpID: dto.rpId || this.rpIds[0],
       userVerification: "required",
     });
     await this.redisClient.set(
@@ -182,7 +186,7 @@ export class WebAuthnService {
         response: dto.response,
         expectedChallenge,
         expectedOrigin: this.expectedOrigins,
-        expectedRPID: this.rpId,
+        expectedRPID: this.rpIds,
         requireUserVerification: true,
         authenticator: {
           credentialID: passkey.credential_id,
