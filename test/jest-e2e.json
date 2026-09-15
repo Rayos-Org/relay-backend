@@ -10,5 +10,8 @@
     "^@modules/(.*)$": "<rootDir>/../src/modules/$1",
     "^@common/(.*)$": "<rootDir>/../src/common/$1",
     "^@config/(.*)$": "<rootDir>/../src/config/$1"
-  }
+  },
+  "transformIgnorePatterns": [
+    "/node_modules/(?!.*(uint8array-extras|@exodus|@noble|@stellar))"
+  ]
 }
