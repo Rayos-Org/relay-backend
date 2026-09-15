@@ -44,6 +44,7 @@
     "class-validator": "^0.14.1",
     "drizzle-orm": "^0.33.0",
     "ioredis": "^5.4.1",
+    "pg": "^8.23.0",
     "reflect-metadata": "^0.2.0",
     "resend": "^6.26.0",
     "rxjs": "^7.8.2",
